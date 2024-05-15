@@ -1,17 +1,17 @@
-from trackgen import generateTrackCode
+from trackinfo import gen_track_code
 import math
 
-def allIDs():
-    trackPieces = {}
+def all_IDs() -> str:
+    track_pieces = {}
     for i in range(36):
-        trackPieces[i] = [{"x":0,"y":0,"z":i,"r":0}]
+        track_pieces[i] = [{"x":0,"y":0,"z":i,"r":0}]
 
-    trackName = "EveryPieceID"
+    track_name = "EveryPieceID"
 
-    print(generateTrackCode(trackName, trackPieces))
+    return gen_track_code(track_name, track_pieces)
 
 
-def generate_sphere(radius, num_points):
+def gen_sphere(radius: float, num_points: int) -> list[dict[str, int]]:
     points = []
     phi = math.pi * (3. - math.sqrt(5.))  # Golden angle in radians
 
@@ -29,13 +29,13 @@ def generate_sphere(radius, num_points):
     return points
 
 
-def remove_duplicates(points):
+def remove_duplicates(points) -> list[dict[str, int | float]]:
     unique_points = set((point['x'], point['y'], point['z']) for point in points)
     return [{'x': x, 'y': y, 'z': z} for x, y, z in unique_points]
 
 
-def sphereTrack(radius):
-    coords = remove_duplicates(generate_sphere(radius=radius, num_points=100000))
+def sphere_track(radius: float) -> str:
+    coords = remove_duplicates(gen_sphere(radius=radius, num_points=100000))
 
     coords = [{'x': i["x"], 'y': 3*(i["y"] + radius) + a, 'z': i["z"], 'r':0} for i in coords for a in range(1)]
 
@@ -43,7 +43,7 @@ def sphereTrack(radius):
     print(f"{len(coords)} blocks")
 
     trackData = {29:coords, 5:[{"x":0,"y":radius * 6 + 1,"z":0,"r":0}]}
-    print(generateTrackCode("Sphere" + str(radius), trackData))
+    return gen_track_code("Sphere" + str(radius), trackData)
 
 
-sphereTrack(50)
+sphere_track(50)
