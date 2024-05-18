@@ -3,25 +3,60 @@
 import zlib
 import base62
 
+import tracktemplates
+
+cp_ids = [52, 65, 75, 77]
+
 def gen_track_code(track_name: str, track_pieces: dict[int, list[dict[str, int]]]) -> str:
     # Track data -> binary -> zlib (compression level 9) -> base62 encoding
 
     track_bytes = b''
 
+    def encode_part(part: dict[str, int], cp: bool) -> bytes:
+        part_bytes = b''
+
+        for key in ['x', 'y', 'z']:
+            val = part[key]
+            if key in ['x', 'z']:
+                val += 2**23
+
+            part_bytes += val.to_bytes(3, byteorder='little')
+
+        val = part['r']
+        part_bytes += val.to_bytes(1, byteorder='little')
+
+        if cp:
+            val = part['cp']
+            part_bytes += val.to_bytes(2, byteorder='little')
+
+        return part_bytes
+
     for part_id, parts in track_pieces.items():
-        track_bytes += part_id.to_bytes(2, byteorder='little', signed=False)
-        track_bytes += len(parts).to_bytes(4, byteorder='little', signed=False)
+        track_bytes += part_id.to_bytes(2, byteorder='little')
+        parts_bytes = b''
+        parts_len = 0
 
         for part in parts:
-            for key in ['x', 'y', 'z']:
-                val = part[key]
-                if key in ['x', 'z']:
-                    val += 2**23
+            if "template" in part:
+                template = part["template"]
+                func = getattr(tracktemplates, f"gen_{template}", None)
+                args = part["args"]
 
-                track_bytes += val.to_bytes(3, byteorder='little', signed=False)
+                if func is None:
+                    raise ValueError(f"Invalid template: {template}")
 
-            val = part['r']
-            track_bytes += val.to_bytes(1, byteorder='little', signed=False)
+                data = func(*args)
+                parts_len += len(data)
+                for part in data:
+                    parts_bytes += encode_part(part, part_id in cp_ids)
+
+                continue
+
+            parts_bytes += encode_part(part, part_id in cp_ids)
+            parts_len += 1
+
+        track_bytes += parts_len.to_bytes(4, byteorder='little')
+        track_bytes += parts_bytes
 
     #print(finalBytes.hex())
     compressed_track = zlib.compress(track_bytes, level=9)
@@ -75,8 +110,13 @@ def decode_track_code(track_code: str) -> tuple[str, dict[int, list[dict[str, in
             z = int.from_bytes(td_bin[pos+6:pos+9], byteorder='little') - 2**23
             r = int(td_bin[pos+9])
             pos += 10
+            if part_id in cp_ids:
+                cp_order = int.from_bytes(td_bin[pos+10:pos+12], byteorder='little')
+                pos += 2
 
-            track[part_id].append({'x': x, 'y': y, 'z': z, 'r': r})
+                track[part_id].append({'x': x, 'y': y, 'z': z, 'r': r, 'cp': cp_order})
+            else:
+                track[part_id].append({'x': x, 'y': y, 'z': z, 'r': r})
 
     return name_str, track
 
