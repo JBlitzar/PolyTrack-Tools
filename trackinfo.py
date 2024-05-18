@@ -22,6 +22,10 @@ def gen_track_code(track_name: str, track_pieces: dict[int, list[dict[str, int]]
 
             val = part['r']
             track_bytes += val.to_bytes(1, byteorder='little', signed=False)
+            
+            if part_id["ckpt"]:
+                val = part_id["ckpt"]
+                track_bytes += val.to_bytes(2, byteorder="little", signed=False)
 
     #print(finalBytes.hex())
     compressed_track = zlib.compress(track_bytes, level=9)
