@@ -1,49 +1,16 @@
-import argparse
-import json
+from imagebuilder import ImageBuilder
+from shapebuilder import ShapeBuilder
+from titlebuilder import TitleBuilder
+from trackbuilder import TrackBuilder
+from chainer import Chainer
 
-import trackinfo
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Command line encoding/decoding of polytrack track codes",
-    )
-    parser.add_argument(
-        "--encode",
-        dest="json_file",
-        help="Read from a JSON file and encode to a track code",
-        metavar="FILEPATH",
-    )
-    parser.add_argument(
-        "--decode",
-        nargs=2,
-        dest="track_code",
-        help="Decode a track code to JSON",
-        metavar=("CODE", "FILEPATH"),
-    )
 
-    args = parser.parse_args()
-    if args.json_file is None and args.track_code is None:
-        parser.print_help()
-        exit(0)
-    if args.json_file:
-        with open(args.json_file, 'r') as f:
-            track_data = json.load(f)
-            name = track_data["name"]
-            track = track_data["track"]
-            track_code = {}
-            for id, data in track.items():
-                track_code[int(id)] = data
-            code = trackinfo.gen_track_code(name, track_code)
-            print(code)
-    else:
-        code = args.track_code[0]
-        file = args.track_code[1]
+chainer = Chainer("Chaining")
 
-        name, track = trackinfo.decode_track_code(code)
-        track_json = { "name": name, "track": track }
+chainer.chain(TrackBuilder(), "load_from_code", {"code": "v2CAlpH4p9YlBGZAEoB4kI4ffff1zAbIxffBkPAAuR5BIA"})
 
-        with open(file, "w") as f:
-            json.dump(track_json, f, indent=" " * 2)
+chainer.chain(TitleBuilder(), "create_cover_image", {"title":"Test", "subtitle":"", "offset":(100,0,0)})
 
-if __name__ == "__main__":
-    main()
+with open("out.txt", "w+") as file: 
+     file.write(chainer.export())

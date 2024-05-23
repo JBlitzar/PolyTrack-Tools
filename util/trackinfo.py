@@ -1,62 +1,35 @@
 # trackgen code by @cwcinc
 
 import zlib
-import base62
-
-import tracktemplates
-
+from . import base62
 cp_ids = [52, 65, 75, 77]
+
 
 def gen_track_code(track_name: str, track_pieces: dict[int, list[dict[str, int]]]) -> str:
     # Track data -> binary -> zlib (compression level 9) -> base62 encoding
 
     track_bytes = b''
 
-    def encode_part(part: dict[str, int], cp: bool) -> bytes:
-        part_bytes = b''
-
-        for key in ['x', 'y', 'z']:
-            val = part[key]
-            if key in ['x', 'z']:
-                val += 2**23
-
-            part_bytes += val.to_bytes(3, byteorder='little')
-
-        val = part['r']
-        part_bytes += val.to_bytes(1, byteorder='little')
-
-        if cp:
-            val = part['cp']
-            part_bytes += val.to_bytes(2, byteorder='little')
-
-        return part_bytes
-
     for part_id, parts in track_pieces.items():
-        track_bytes += part_id.to_bytes(2, byteorder='little')
-        parts_bytes = b''
-        parts_len = 0
+        track_bytes += part_id.to_bytes(2, byteorder='little', signed=False)
+        track_bytes += len(parts).to_bytes(4, byteorder='little', signed=False)
 
         for part in parts:
-            if "template" in part:
-                template = part["template"]
-                func = getattr(tracktemplates, f"gen_{template}", None)
-                args = part["args"]
+            for key in ['x', 'y', 'z']:
+                val = part[key]
+                if key in ['x', 'z']:
+                    val += 2**23
 
-                if func is None:
-                    raise ValueError(f"Invalid template: {template}")
+                track_bytes += val.to_bytes(3, byteorder='little', signed=False)
 
-                data = func(*args)
-                parts_len += len(data)
-                for part in data:
-                    parts_bytes += encode_part(part, part_id in cp_ids)
+            val = part['r']
+            track_bytes += val.to_bytes(1, byteorder='little', signed=False)
 
-                continue
-
-            parts_bytes += encode_part(part, part_id in cp_ids)
-            parts_len += 1
-
-        track_bytes += parts_len.to_bytes(4, byteorder='little')
-        track_bytes += parts_bytes
+            try:
+                if part["ckpt"] != None:
+                    track_bytes += part["ckpt"].to_bytes(2, byteorder="little", signed=False)
+            except KeyError:
+                pass
 
     #print(finalBytes.hex())
     compressed_track = zlib.compress(track_bytes, level=9)
@@ -68,7 +41,6 @@ def gen_track_code(track_name: str, track_pieces: dict[int, list[dict[str, int]]
 
     # v2 + length of name encoded + track name encoded + track data encoded
     encoded_track = "v2" + p1 + p2 + p3
-
     return encoded_track
 
 def decode_track_code(track_code: str) -> tuple[str, dict[int, list[dict[str, int]]]]:
@@ -98,6 +70,7 @@ def decode_track_code(track_code: str) -> tuple[str, dict[int, list[dict[str, in
     td_bin = zlib.decompress(bytes(td_decoded))
     track: dict[int, list[dict[str, int]]] = {}
 
+
     pos = 0
     while pos < len(td_bin):
         part_id = int.from_bytes(td_bin[pos:pos+2],   byteorder='little')
@@ -109,14 +82,15 @@ def decode_track_code(track_code: str) -> tuple[str, dict[int, list[dict[str, in
             y = int.from_bytes(td_bin[pos+3:pos+6], byteorder='little')
             z = int.from_bytes(td_bin[pos+6:pos+9], byteorder='little') - 2**23
             r = int(td_bin[pos+9])
-            pos += 10
+            ckpt = None
             if part_id in cp_ids:
-                cp_order = int.from_bytes(td_bin[pos+10:pos+12], byteorder='little')
-                pos += 2
+                ckpt = int.from_bytes(td_bin[pos+9:pos+11], byteorder='little')
 
-                track[part_id].append({'x': x, 'y': y, 'z': z, 'r': r, 'cp': cp_order})
+                pos += 12
             else:
-                track[part_id].append({'x': x, 'y': y, 'z': z, 'r': r})
+                pos += 10
+
+            track[part_id].append({'x': x, 'y': y, 'z': z, 'r': r, "ckpt":ckpt})
 
     return name_str, track
 
