@@ -2,15 +2,23 @@ from imagebuilder import ImageBuilder
 from shapebuilder import ShapeBuilder
 from titlebuilder import TitleBuilder
 from trackbuilder import TrackBuilder
+from voxelbuilder import VoxelBuilder
+
+
 from chainer import Chainer
 
 
 
-chainer = Chainer("Chaining")
+chainer = Chainer("Hand")
 
-chainer.chain(TrackBuilder(), "load_from_code", {"code": "v2CAlpH4p9YlBGZAEoB4kI4ffff1zAbIxffBkPAAuR5BIA"})
 
-chainer.chain(TitleBuilder(), "create_cover_image", {"title":"Test", "subtitle":"", "offset":(100,0,0)})
+
+
+chainer.chain(TrackBuilder(), "add_starting_point", {})
+
+#chainer.chain(TitleBuilder(), "create_cover_image", {"title":"Trefoil", "subtitle":"", "offset":(100,0,0)})
+
+chainer.chain(VoxelBuilder(), "add_file", {"file_path":"hand.obj"})
 
 with open("out.txt", "w+") as file: 
      file.write(chainer.export())

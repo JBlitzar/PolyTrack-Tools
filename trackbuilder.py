@@ -17,7 +17,7 @@ class TrackBuilder:
                 newpiece["id"] = key
                 self.add_piece(**newpiece)
     @staticmethod
-    def _remove_duplicates(points) -> list[dict[str, int | float]]:
+    def _remove_duplicates(points) -> list[dict[str, Union[int, float]]]:
         unique_points = set((point['x'], point['y'], point['z'], point['rot'], point['ckpt']) for point in points)
         return [{'x': x, 'y': y, 'z': z, 'rot': rot, 'ckpt': ckpt} for x, y, z, rot, ckpt in unique_points]
     
@@ -38,17 +38,16 @@ class TrackBuilder:
 
     @staticmethod
     def get_id_alias(id: str) -> int:
-        match id: 
-            case "checkpoint":
-                id = 52
-            case "start":
-                id = 5
-            case "straight":
-                id = 0
-            case "finish":
-                id = 6
-            case "block":
-                id = 29
+        if id == "checkpoint":
+            id = 52
+        elif id == "start":
+            id = 5
+        elif id == "straight":
+            id = 0
+        elif id == "finish":
+            id = 6
+        elif id == "block":
+            id = 29
         return id
 
     def add_piece(self, id: int, x:int, y:int, z:int, r: int=0, ckpt: Union[int, None]=0) -> None:
