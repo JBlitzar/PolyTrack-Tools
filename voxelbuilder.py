@@ -85,7 +85,7 @@ class VoxelBuilder(TrackBuilder):
         return mesh
 
     
-    def add_file(self, file_path, scale_factor=2, rotate=False):
+    def add_file(self, file_path, scale_factor=2, rotate=False, offset = (0,0,0), hollow=False):
         mesh = self.load_mesh(file_path)
 
         mesh = self.as_mesh(mesh)
@@ -96,6 +96,9 @@ class VoxelBuilder(TrackBuilder):
         print(type(mesh))
 
         mesh = self.scale_mesh(mesh, scale_factor)
+
+        if hollow:
+            mesh.hollow()
 
         
 
@@ -108,6 +111,6 @@ class VoxelBuilder(TrackBuilder):
         voxel_coords = self.adjust_y_values(voxel_coords)
 
         for coord in tqdm(voxel_coords):
-            self.add_piece(self.get_id_alias("block"), int(coord[0]), int(coord[1]), int(coord[2]), 0, None)
+            self.add_piece(self.get_id_alias("block"), int(coord[0])+offset[0], int(coord[1])+offset[1], int(coord[2])+offset[2], 0, None)
 
 #e
