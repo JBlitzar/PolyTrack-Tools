@@ -1,6 +1,7 @@
 from imagebuilder import ImageBuilder
 from typing import Tuple
 from PIL import Image, ImageDraw, ImageFont
+import PIL.ImageOps
 
 class TitleBuilder(ImageBuilder):
     def __init__(self, name: str = "", height: int = 2 ** 16, image_size: int = 60, background_color: str = "#ffffff") -> None:
@@ -42,5 +43,8 @@ class TitleBuilder(ImageBuilder):
         image.save("out.png")
         return image
     
-    def create_cover_image(self, title, subtitle, offset = (0,0,0)):
-        self.add_image(self._create_title_image(title, subtitle), monochrome=True, offset=offset)
+    def create_cover_image(self, title, subtitle, offset = (0,0,0), negate=False):
+        image = self._create_title_image(title, subtitle)
+        if negate:
+            image = PIL.ImageOps.invert(image)
+        self.add_image(image, monochrome=True, offset=offset)
