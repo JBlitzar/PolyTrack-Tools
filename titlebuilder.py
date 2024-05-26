@@ -27,8 +27,8 @@ class TitleBuilder(ImageBuilder):
         subtitle_width = subtitle_font.getlength(subtitle)
 
         # Calculate text heights
-        title_height = title_font.getlength(title)#[1]
-        subtitle_height = subtitle_font.getlength(subtitle)  #[1]
+        title_height = 10
+        subtitle_height = 10
 
         # Calculate text positions
         title_position = ((self.image_size - title_width) // 2,
